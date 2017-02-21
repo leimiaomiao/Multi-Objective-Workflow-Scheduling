@@ -2,20 +2,29 @@ from config import constant
 from model.Individual import Individual, IndividualTask
 import random
 import copy
-import math
 from util.CrowdingDistanceAlgorithm import CrowdingDistanceAlgorithm
+from util.ParetoAlgorithm import ParetoAlgorithm
 
 
 class GeneticAlgorithm(object):
     # 遗传算法初始化，bw_value为当前带宽环境
-    def __init__(self, workflow, bw_value):
+    paretoAlgorithm = ParetoAlgorithm()
+
+    def __init__(self, workflow, bw_value, delta=constant.USR_MAX_DELAY_TOLERANCE):
         # 随机初始化种群
         self.individual_list = list()
         self.workflow = workflow
+        self.delta = delta
+
+        if self.delta == 0:
+            name = "MOWS_%s" % self.delta
+        else:
+            name = "MOWS_DTM_%s" % self.delta
+        self.name = name
 
         i = 0
         while i < constant.INDIVIDUAL_NUM:
-            individual = Individual(self, i, workflow, bw_value)
+            individual = Individual(self, i, workflow, bw_value, delta)
             individual.schedule()
             self.individual_list.append(individual)
             i += 1
@@ -203,33 +212,13 @@ class GeneticAlgorithm(object):
             new_generation.append(individual2)
         return new_generation
 
-    @staticmethod
-    def get_pareto_result(pareto_list):
-        new_pareto_list = list()
-
-        if pareto_list is not None:
-            i = 0
-            while i < len(pareto_list):
-                defeat = False
-                j = 0
-                while j < len(pareto_list):
-                    if i != j:
-                        if pareto_list[j].makespan < pareto_list[i].makespan \
-                                and pareto_list[j].energy < pareto_list[i].energy:
-                            defeat = True
-                    j += 1
-                if defeat is False:
-                    new_pareto_list.append(pareto_list[i])
-                i += 1
-        return new_pareto_list
-
     def individual_select(self, individual_list, num):
         individual_left = list()
 
         individual_list_temp = copy.deepcopy(individual_list)
 
         while len(individual_left) < num:
-            pareto_list = self.get_pareto_result(individual_list_temp)
+            pareto_list = self.paretoAlgorithm.get_pareto_result(individual_list_temp)
             if len(individual_left) + len(pareto_list) <= num:
                 individual_left += pareto_list
 
@@ -259,15 +248,15 @@ class GeneticAlgorithm(object):
         pareto_result = list()
 
         iteration = 0
-        while iteration < constant.ITERATION and len(pareto_result) < constant.PARETO_RESULT_NUM:
+        while iteration < constant.ITERATION:
             # 适应度值评价
             print("适应度值评价")
-            pareto_list = self.get_pareto_result(new_generation)
+            pareto_list = self.paretoAlgorithm.get_pareto_result(new_generation)
 
             # 更新Pareto最优解
             print("更新Pareto最优解")
             new_pareto_list = pareto_result + pareto_list
-            pareto_result = self.get_pareto_result(new_pareto_list)
+            pareto_result = self.paretoAlgorithm.get_pareto_result(new_pareto_list)
             print("Pareto最优解长度 %s" % len(pareto_result))
 
             # 选择算子
@@ -288,5 +277,22 @@ class GeneticAlgorithm(object):
             new_generation = self.get_new_generation(old_generation)
             iteration += 1
 
-        self.pareto_result = pareto_result
-        print("____________")
+        filter_result = list()
+
+        for individual in pareto_result:
+            exist = False
+            for i in filter_result:
+                if individual.makespan == i.makespan and individual.energy == i.energy:
+                    exist = True
+
+            if exist is False:
+                filter_result.append(individual)
+
+        crowding_distance_algorithm = CrowdingDistanceAlgorithm()
+        self.pareto_result = crowding_distance_algorithm.individual_select_by_crowding_distance(filter_result,
+                                                                                                constant.INDIVIDUAL_NUM)
+        # for result in pareto_result:
+        #     result.print()
+        #     result.print_results()
+        #     print("=================")
+

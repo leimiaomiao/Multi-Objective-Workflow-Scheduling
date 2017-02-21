@@ -6,6 +6,7 @@ from util.CrowdingDistanceAlgorithm import CrowdingDistanceAlgorithm
 
 class MOHEFTAlgorithm(object):
     def __init__(self, workflow, bw_value):
+        self.name = "MOHEFT"
         self.workflow = workflow
         self.bw_value = bw_value
 
@@ -38,8 +39,9 @@ class MOHEFTAlgorithm(object):
         k = constant.PARETO_RESULT_NUM
 
         # 记录当前的pareto列表，元素为一个individual_task的列表
-        pareto_result = list()
+        result = list()
         individual_id = 0
+
         for individual_task in self.individual.individual_task_list:
             task_temp_1 = copy.deepcopy(individual_task)
             task_temp_1.exec_pos = 0
@@ -48,9 +50,8 @@ class MOHEFTAlgorithm(object):
             task_temp_2.exec_pos = 1
 
             to_select_list = list()
-
-            if len(pareto_result) > 0:
-                for individual in pareto_result:
+            if len(result) > 0:
+                for individual in result:
                     individual_temp_1 = copy.deepcopy(individual)
                     individual_temp_1.individual_id = individual_id
 
@@ -87,7 +88,12 @@ class MOHEFTAlgorithm(object):
                 individual_id += 1
 
             crowding_distance_algorithm = CrowdingDistanceAlgorithm()
-            pareto_result = crowding_distance_algorithm.individual_select_by_crowding_distance(to_select_list, k)
+            result = crowding_distance_algorithm.individual_select_by_crowding_distance(to_select_list, k)
 
-        self.pareto_result = pareto_result
-        print(len(pareto_result))
+        self.pareto_result = result
+
+        # print(len(self.pareto_result))
+        # for result in self.pareto_result:
+        #     result.print()
+        #     result.print_results()
+        #     print("=============")

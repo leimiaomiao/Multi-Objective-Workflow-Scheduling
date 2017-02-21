@@ -13,15 +13,19 @@ class Individual(object):
     energy = 0
     individual_id = 0
 
-    def __init__(self, algorithm, individual_id, workflow, bandwidth_value):
+    def __init__(self, algorithm, individual_id, workflow, bandwidth_value, delta=constant.USR_MAX_DELAY_TOLERANCE):
         self.individual_id = individual_id
         self.workflow = workflow
         self.bandwidth_value = bandwidth_value
+        self.delta = delta
         self.individual_task_list = algorithm.init_task_list_order_pos()
 
     def print(self):
         for individual_task in self.individual_task_list:
             print(individual_task.task.task_id, individual_task.exec_pos, individual_task.exec_sequence)
+
+    def print_results(self):
+        print(self.individual_id, self.makespan, self.energy)
 
     def get_individual_task_by_id(self, _id):
         for individual_task in self.individual_task_list:
@@ -43,7 +47,17 @@ class Individual(object):
         energy = 0
         for individual_task in self.individual_task_list:
             energy += individual_task.task.energy
-        return energy
+
+        last_individual_task = self.individual_task_list[len(self.individual_task_list) - 1]
+
+        if last_individual_task.exec_pos == 1:
+            optimal_v, optimal_k = self.delay_transmission(
+                self.bandwidth_value, last_individual_task.task.end_time, last_individual_task.task.output)
+
+            time_span = optimal_k - optimal_v
+            energy += constant.MOBILE_RECEIVE_POWER * time_span
+
+        return math.ceil(energy)
 
     @staticmethod
     def is_task_ready_to_exec(individual_task, finish_task_id_list):
@@ -68,8 +82,7 @@ class Individual(object):
 
         return task_input
 
-    @staticmethod
-    def delay_transmission(bandwidth_value, cur_time, task_input):
+    def delay_transmission(self, bandwidth_value, cur_time, task_input):
         cur_bw_value = bandwidth_value[cur_time]
         span = 1
         value = cur_bw_value
@@ -81,14 +94,13 @@ class Individual(object):
         k1 = cur_time + span
 
         # 加入延时传输机制
-        delta = constant.USR_MAX_DELAY_TOLERANCE
 
         min_span = span
         optimal_v = cur_time
         optimal_k = k1
 
         i = 1
-        while i <= delta:
+        while i <= self.delta:
             # 新的传输结束时间点
             k2 = k1 + i
             value = bandwidth_value[k2 - 1]
@@ -107,8 +119,7 @@ class Individual(object):
 
         return optimal_v, optimal_k
 
-    @staticmethod
-    def update(individual_task, cur_time, optimal_v, optimal_k):
+    def update(self, individual_task, cur_time, optimal_v, optimal_k):
         individual_task.task.start_time = cur_time
         individual_task.task.transmission_time = optimal_k - optimal_v
         individual_task.task.span_time = optimal_k - cur_time

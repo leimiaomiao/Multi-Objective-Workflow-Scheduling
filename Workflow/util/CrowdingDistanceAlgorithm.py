@@ -2,6 +2,20 @@ import math
 
 
 class CrowdingDistanceAlgorithm(object):
+    @staticmethod
+    def get_min_distance(individual_list, individual):
+        if len(individual_list) < 2:
+            return 0
+
+        distance_list = list()
+        for ind in individual_list:
+            if ind.individual_id != individual.individual_id:
+                distance = math.sqrt(
+                    math.pow((ind.energy - individual.energy), 2) + math.pow((ind.makespan - individual.makespan), 2))
+                distance_list.append(distance)
+
+        return min(distance_list)
+
     def individual_select_by_crowding_distance(self, individual_list, num):
         result = list()
 
@@ -23,13 +37,22 @@ class CrowdingDistanceAlgorithm(object):
 
         sorted_crowding_distance = sorted(crowding_distance, key=lambda d: d[1])
 
-        first_4 = [first_individual_makespan, last_individual_makespan, first_individual_energy, last_individual_energy]
+        prior_list = []
 
-        if num >= 4:
-            result.extend(
-                [first_individual_makespan, last_individual_makespan, first_individual_energy, last_individual_energy])
+        for individual in [first_individual_makespan, last_individual_makespan, first_individual_energy,
+                           last_individual_energy]:
+            exist = False
+            for i in prior_list:
+                if individual.individual_id == i.individual_id:
+                    exist = True
+                    break
+            if exist is False:
+                prior_list.append(individual)
 
-            left_num = num - 4
+        if num >= len(prior_list):
+            result.extend(prior_list)
+
+            left_num = num - len(prior_list)
 
             j = 0
             while j < left_num and j < len(sorted_crowding_distance):
@@ -41,7 +64,7 @@ class CrowdingDistanceAlgorithm(object):
                         break
                 j += 1
         else:
-            result = first_4[:num]
+            result = prior_list[:num]
 
         return result
 
