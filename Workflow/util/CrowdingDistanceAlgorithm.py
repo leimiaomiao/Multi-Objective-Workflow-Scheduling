@@ -35,7 +35,7 @@ class CrowdingDistanceAlgorithm(object):
                 distance = makespan_distance_dict[indi_id] + energy_distance_dict[indi_id]
                 crowding_distance.append((indi_id, distance))
 
-        sorted_crowding_distance = sorted(crowding_distance, key=lambda d: d[1])
+        sorted_crowding_distance = sorted(crowding_distance, key=lambda d: d[1], reverse=True)
 
         prior_list = []
 
