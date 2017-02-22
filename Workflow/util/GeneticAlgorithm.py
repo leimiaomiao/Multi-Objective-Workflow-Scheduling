@@ -241,6 +241,22 @@ class GeneticAlgorithm(object):
 
         return individual_left
 
+    @staticmethod
+    def get_filter_result(pareto_result):
+        filter_result = list()
+
+        for individual in pareto_result:
+            exist = False
+            for i in filter_result:
+                if individual.makespan == i.makespan and individual.energy == i.energy:
+                    exist = True
+
+            if exist is False:
+                filter_result.append(individual)
+        crowding_distance_algorithm = CrowdingDistanceAlgorithm()
+        return crowding_distance_algorithm.individual_select_by_crowding_distance(filter_result,
+                                                                                  constant.INDIVIDUAL_NUM)
+
     def process(self):
         old_generation = list()
         new_generation = self.individual_list
@@ -277,20 +293,7 @@ class GeneticAlgorithm(object):
             new_generation = self.get_new_generation(old_generation)
             iteration += 1
 
-        filter_result = list()
-
-        for individual in pareto_result:
-            exist = False
-            for i in filter_result:
-                if individual.makespan == i.makespan and individual.energy == i.energy:
-                    exist = True
-
-            if exist is False:
-                filter_result.append(individual)
-
-        crowding_distance_algorithm = CrowdingDistanceAlgorithm()
-        self.pareto_result = crowding_distance_algorithm.individual_select_by_crowding_distance(filter_result,
-                                                                                                constant.INDIVIDUAL_NUM)
+        self.pareto_result = self.get_filter_result(pareto_result)
         # for result in pareto_result:
         #     result.print()
         #     result.print_results()

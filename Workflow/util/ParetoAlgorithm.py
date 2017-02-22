@@ -10,12 +10,8 @@ class ParetoAlgorithm(object):
                 j = 0
                 while j < len(pareto_list):
                     if i != j:
-                        if pareto_list[j].makespan <= pareto_list[i].makespan \
-                                and pareto_list[j].energy < pareto_list[i].energy:
-                            defeat = True
-                            break
-                        if pareto_list[j].energy <= pareto_list[i].energy \
-                                and pareto_list[j].makespan < pareto_list[i].makespan:
+                        if (pareto_list[j].makespan <= pareto_list[i].makespan and pareto_list[j].energy < pareto_list[i].energy) \
+                                or (pareto_list[j].energy <= pareto_list[i].energy and pareto_list[j].makespan < pareto_list[i].makespan):
                             defeat = True
                             break
                     j += 1
